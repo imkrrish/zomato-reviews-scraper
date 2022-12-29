@@ -11,11 +11,11 @@ const anardanaZomatoLinks = [
 ]
 
 var browserLoader = async function (link) {
-  const browser = await puppeteer.launch({ headless: false })
+  const browser = await puppeteer.launch({ headless: true })
   const page = await browser.newPage()
-  // await page.setUserAgent(
-  //   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36"
-  // )
+  await page.setUserAgent(
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36"
+  )
   await page.setViewport({ width: 1587, height: 937 })
   await page.goto(link)
 
@@ -32,82 +32,88 @@ var browserLoader = async function (link) {
   return { page, browser }
 }
 
-async function getreviews(link, dataArray) {
-  const formatDate = (date) => {
-    const dateArray = date.split(" ")
-    var fromattedDate = moment()
-      .subtract(dateArray[0], dateArray[1])
-      .toISOString()
-    return fromattedDate
-  }
+const formatDate = (date) => {
+  const dateArray = date.split(" ")
+  var fromattedDate = moment()
+    .subtract(dateArray[0], dateArray[1])
+    .toISOString()
+  return fromattedDate
+}
 
+async function getreviews(dataArray, count) {
   try {
-    const { page, browser } = await browserLoader(link)
-    const data = await page.evaluate(() => {
-      return document.documentElement.innerHTML
-    })
-
-    const $ = cheerio.load(data)
-
-    const nameSelector =
-      "#root > div > main > div > section > div > div > section > div > section > div > div > a > p"
-
-    const ratingSelector =
-      "#root > div > main > div > section > div > div > section > div > div > div > div > div > div > div:nth-child(1)"
-
-    const dateSelector =
-      "#root > div > main > div > section > div > div > section > div > div > p"
-
-    const reviewsSelector =
-      "#root > div > main > div > section > div > div > section > div > p"
-
-    const replySelector =
-      "#root > div > main > div > section > div > div > section > div > div.sc-guDjWT.hyGsHu > div"
-
-    $(reviewsSelector).each((i, e) => {
-      const obj = { plateform: "Zomato" }
-      const review = $(e).text()
-
-      $(nameSelector).each((index, element) => {
-        if (index === i) {
-          const name = $(element).text()
-          obj.name = name
-        }
+    anardanaZomatoLinks.forEach(async (link, index) => {
+      const { page, browser } = await browserLoader(link)
+      const data = await page.evaluate(() => {
+        return document.documentElement.innerHTML
       })
 
-      $(ratingSelector).each((index, element) => {
-        if (index === i) {
-          const rating = $(element).text()
-          obj.rating = rating
-        }
-      })
+      const $ = cheerio.load(data)
 
-      $(dateSelector).each((index, element) => {
-        if (index === i) {
-          const date = $(element).text()
-          const formattedDate = formatDate(date)
-          obj.date = formattedDate
-        }
-      })
-      obj.review = review
+      const nameSelector =
+        "#root > div > main > div > section > div > div > section > div > section > div > div > a > p"
 
-      $(replySelector).each((index, element) => {
-        if (
-          $(element).find("div > div > a > span").text().toLowerCase() ===
-          "anardana"
-        ) {
+      const ratingSelector =
+        "#root > div > main > div > section > div > div > section > div > div > div > div > div > div > div:nth-child(1)"
+
+      const dateSelector =
+        "#root > div > main > div > section > div > div > section > div > div > p"
+
+      const reviewsSelector =
+        "#root > div > main > div > section > div > div > section > div > p"
+
+      const replySelector =
+        "#root > div > main > div > section > div > div > section > div > div.sc-guDjWT.hyGsHu > div"
+
+      $(reviewsSelector).each((i, e) => {
+        const obj = { plateform: "Zomato" }
+        const review = $(e).text()
+
+        $(nameSelector).each((index, element) => {
           if (index === i) {
-            const reply = $(element)
-              .find("div > div > div > div:nth-child(1)")
-              .text()
-            obj.reply = reply
+            const name = $(element).text()
+            obj.name = name
           }
+        })
+
+        $(ratingSelector).each((index, element) => {
+          if (index === i) {
+            const rating = $(element).text()
+            obj.rating = rating
+          }
+        })
+
+        $(dateSelector).each((index, element) => {
+          if (index === i) {
+            const date = $(element).text()
+            const formattedDate = formatDate(date)
+            obj.date = formattedDate
+          }
+        })
+
+        obj.review = review
+
+        $(replySelector).each((index, element) => {
+          if (
+            $(element).find("div > div > a > span").text().toLowerCase() ===
+            "anardana"
+          ) {
+            if (index === i) {
+              const reply = $(element)
+                .find("div > div > div > div:nth-child(1)")
+                .text()
+              obj.reply = reply
+            }
+          }
+        })
+        dataArray.push(obj)
+        count++
+        if (count === 20) {
+          console.log(dataArray)
         }
       })
-      dataArray.push(obj)
+      browser.close()
     })
-
-    browser.close()
   } catch (err) {
     console.error(err)
     browser.close()
@@ -116,11 +122,9 @@ async function getreviews(link, dataArray) {
 }
 
 async function main() {
+  let count = 0
   const dataArray = []
-  anardanaZomatoLinks.forEach(async (link, index) => {
-    await getreviews(link, dataArray)
-    // console.log("🚀", index, dataArray)
-  })
+  await getreviews(dataArray, count)
 }
 
 main()
