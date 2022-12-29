@@ -1,4 +1,3 @@
-// const axios = require("axios")
 const cheerio = require("cheerio")
 const puppeteer = require("puppeteer")
 const moment = require("moment")
@@ -7,7 +6,8 @@ const anardanaZomatoLinks = [
   "https://www.zomato.com/ncr/anardana-vasant-vihar-new-delhi/reviews",
   "https://www.zomato.com/ncr/anardana-2-karkardooma-new-delhi/reviews",
   "https://www.zomato.com/ncr/anardana-sector-69-gurgaon/reviews",
-  "https://www.zomato.com/ncr/anardana-r-k-puram-new-delhi/reviews"
+  "https://www.zomato.com/ncr/anardana-r-k-puram-new-delhi/reviews",
+  "https://www.zomato.com/chandigarh/anardana-chandigarh-industrial-area/reviews"
 ]
 
 var browserLoader = async function (link) {
@@ -63,7 +63,7 @@ async function getreviews(dataArray, count) {
         "#root > div > main > div > section > div > div > section > div > p"
 
       const replySelector =
-        "#root > div > main > div > section > div > div > section > div > div.sc-guDjWT.hyGsHu > div"
+        "#root > div > main > div > section > div > div > section > div > div.sc-guDjWT.hyGsHu"
 
       $(reviewsSelector).each((i, e) => {
         const obj = { plateform: "Zomato" }
@@ -94,21 +94,24 @@ async function getreviews(dataArray, count) {
         obj.review = review
 
         $(replySelector).each((index, element) => {
-          if (
-            $(element).find("div > div > a > span").text().toLowerCase() ===
-            "anardana"
-          ) {
-            if (index === i) {
-              const reply = $(element)
-                .find("div > div > div > div:nth-child(1)")
-                .text()
-              obj.reply = reply
-            }
-          }
+          $(element).each((ind, ele) => {
+            $(ele)
+              .find("div > div > div > a > span")
+              .each((a, b) => {
+                if ($(b).text().toLocaleLowerCase() === "anardana") {
+                  if (index === i) {
+                    const reply = $(ele)
+                      .find("div > div > div > div > div:nth-child(1)")
+                      .text()
+                    obj.reply = reply
+                  }
+                }
+              })
+          })
         })
         dataArray.push(obj)
         count++
-        if (count === 20) {
+        if (count === 25) {
           console.log(dataArray)
         }
       })
